@@ -1,22 +1,91 @@
 import itertools
+import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.metrics import classification_report
+from tqdm import tqdm_notebook
+import torch
 
-def create_sequence_data(data, window_length = 2, flatten=False):
-  x=data[:,:-1]
-  y=data[:,-1]
+def accuracy(output, target):
+    """Computes the precision for the specified values of k"""
+    batch_size = target.shape[0]
+    correct = output.eq(target).sum() * 1.0
+    acc = correct / batch_size
 
-  shape = (x.shape[0]-window_length+1, window_length, x.shape[1])
-  strides = (x.strides[0], x.strides[0], x.strides[1])
+    return acc
 
-  windowed_x = np.lib.stride_tricks.as_strided(x, shape, strides)
-  matching_y = y[window_length-1:].reshape(-1,1)
-  
-  if flatten:
-    windowed_data = np.append(windowed_x.reshape(windowed_x.shape[0],-1), matching_y, axis = 1)
-  else:
-    windowed_data = {'x':windowed_x, 'y':matching_y}
-  
-  return windowed_data
+#cite: from hw2    
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+    
+#cite: from hw4    
+def train(model, dataloader, optimizer, criterion, scheduler=None):
+    model.train()
+    losses = AverageMeter()
+    acc = AverageMeter()
+    total_loss=0.
+    #progress_bar = tqdm_notebook(dataloader, ascii=True)
+    progress_bar = dataloader
+    for batch_idx, (data, target) in enumerate(progress_bar):
+
+        out=model(data.float())
+        #print(out)
+        #print(target)
+        optimizer.zero_grad()
+        loss = criterion(out, target.float())
+        total_loss+=loss
+        loss.backward()
+        #torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        optimizer.step()
+
+        #progress_bar.set_description_str(
+        #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
+            
+        pred=torch.round(torch.sigmoid(out)).long()
+        batch_acc = classification_report(target.detach().numpy(), pred.detach().numpy(), output_dict=True)['weighted avg']['f1-score']
+        losses.update(loss, out.shape[0])
+        acc.update(batch_acc, out.shape[0])
+
+    return total_loss, losses.avg, acc.avg 
+
+
+#cite: from hw4
+def evaluate(model, dataloader, criterion):
+    model.eval()
+    total_loss = 0.
+    losses = AverageMeter()
+    acc = AverageMeter()
+    with torch.no_grad():
+        # Get the progress bar
+        #progress_bar = tqdm_notebook(dataloader, ascii=True)
+        progress_bar = dataloader
+        for batch_idx, (data,target) in enumerate(progress_bar):
+            out = model(data.float())
+            loss = criterion(out, target.float())
+            total_loss += loss
+            #progress_bar.set_description_str(
+            #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
+
+        pred=torch.round(torch.sigmoid(out)).long()
+        batch_acc = classification_report(target.detach().numpy(), pred.detach().numpy(), output_dict=True)['weighted avg']['f1-score']
+        losses.update(loss, out.shape[0])
+        acc.update(batch_acc, out.shape[0])
+
+    return total_loss, losses.avg, acc.avg 
 
 #cite: from Ilkay's gatech ml class
 def save_or_show_plot(plt_name, save):
@@ -25,6 +94,21 @@ def save_or_show_plot(plt_name, save):
         plt.close()
     else:
         plt.show()
+
+#cite: from Ilkay's gatech dl class    
+def plot_curves(train_loss_history, train_acc_history, valid_loss_history, valid_acc_history, info, save):
+    plotting = {'Loss':     {'tra_data': train_loss_history, 'val_data': valid_loss_history},
+                'Accuracy': {'tra_data': train_acc_history,  'val_data': valid_acc_history}}
+    for type, data in plotting.items():
+        plt.plot(data['tra_data'], label='training')
+        plt.plot(data['val_data'], label='validation')
+        plt.title(type+" Curve " + info)
+        plt.xlabel("Epoch")
+        plt.ylabel(type)
+        plt.grid()
+        plt.legend(loc="best")
+        save_or_show_plot(type+'_curve_'+info,save)
+
 
 #cite: from Ilkay's gatech ml class
 def plot_histogram(data,name,save):
