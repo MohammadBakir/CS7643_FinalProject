@@ -208,13 +208,14 @@ class TransformerModelImpl2(nn.Module):
     self.device=params.device
     encoder_layer = nn.TransformerEncoderLayer(batch_first=True, dropout=params.dropout, d_model=params.d_model, nhead=params.nhead, dim_feedforward=params.dim_feedforward)
     self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=params.num_layers)
-    self.fc_layer1 = nn.Linear(params.d_model,1)
+    self.fc_layer = nn.Linear(params.d_model*params.seq_len,params.d_output)
 
   def forward(self,X):
       
     seq_length, dimension = X.size(1), X.size(2)
     out = X
     out += positioning_encoding(self.device, seq_length, dimension)
-    out = self.transformer_encoder(out)    
-    out = self.fc_layer3(out)
+    out = self.transformer_encoder(out)
+    out = torch.flatten(out,start_dim=1)   
+    out = self.fc_layer(out)
     return out.reshape(X.shape[0],-1)
