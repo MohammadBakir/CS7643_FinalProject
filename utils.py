@@ -31,9 +31,26 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+#cite: https://discuss.pytorch.org/t/check-gradient-flow-in-network/15063/7    
+def plot_grad_flow(named_parameters):
+    ave_grads = []
+    layers = []
+    for n, p in named_parameters:
+        if(p.requires_grad) and ("bias" not in n):
+            layers.append(n)
+            ave_grads.append(p.grad.abs().mean())
+    plt.plot(ave_grads, alpha=0.3, color="b")
+    plt.hlines(0, 0, len(ave_grads)+1, linewidth=1, color="k" )
+    plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
+    plt.xlim(xmin=0, xmax=len(ave_grads))
+    plt.xlabel("Layers")
+    plt.ylabel("average gradient")
+    plt.title("Gradient flow")
+    plt.grid(True)
     
 #cite: from hw4    
-def train(model, dataloader, optimizer, criterion, scheduler=None):
+def train(model, dataloader, optimizer, criterion, device, scheduler=None,grad_clip=0):
     model.train()
     losses = AverageMeter()
     acc = AverageMeter()
@@ -41,30 +58,29 @@ def train(model, dataloader, optimizer, criterion, scheduler=None):
     #progress_bar = tqdm_notebook(dataloader, ascii=True)
     progress_bar = dataloader
     for batch_idx, (data, target) in enumerate(progress_bar):
-
+        data, target = data.to(device), target.to(device)
         out=model(data.float())
-        #print(out)
-        #print(target)
         optimizer.zero_grad()
         loss = criterion(out, target.float())
         total_loss+=loss
         loss.backward()
-        #torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+        if grad_clip>0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+        #plot_grad_flow(model.named_parameters())
         optimizer.step()
 
         #progress_bar.set_description_str(
         #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
             
         pred=torch.round(torch.sigmoid(out)).long()
-        batch_acc = classification_report(target.detach().numpy(), pred.detach().numpy(), output_dict=True)['weighted avg']['f1-score']
+        batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)['weighted avg']['f1-score']
         losses.update(loss, out.shape[0])
         acc.update(batch_acc, out.shape[0])
 
     return total_loss, losses.avg, acc.avg 
-
-
+    
 #cite: from hw4
-def evaluate(model, dataloader, criterion):
+def evaluate(model, dataloader, criterion, device):
     model.eval()
     total_loss = 0.
     losses = AverageMeter()
@@ -74,6 +90,7 @@ def evaluate(model, dataloader, criterion):
         #progress_bar = tqdm_notebook(dataloader, ascii=True)
         progress_bar = dataloader
         for batch_idx, (data,target) in enumerate(progress_bar):
+            data, target = data.to(device), target.to(device)
             out = model(data.float())
             loss = criterion(out, target.float())
             total_loss += loss
@@ -81,7 +98,7 @@ def evaluate(model, dataloader, criterion):
             #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
 
         pred=torch.round(torch.sigmoid(out)).long()
-        batch_acc = classification_report(target.detach().numpy(), pred.detach().numpy(), output_dict=True)['weighted avg']['f1-score']
+        batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)['weighted avg']['f1-score']
         losses.update(loss, out.shape[0])
         acc.update(batch_acc, out.shape[0])
 
