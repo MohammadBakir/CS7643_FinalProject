@@ -45,7 +45,7 @@ class MultiHeadAttention(nn.Module):
         return out
         
 #todo should we instead implement learnable embedding
-def positioning_encoding(seq_length, model_dim):
+def positioning_encoding(device, seq_length, model_dim):
     '''
     Computes the positional encoding for the current state of the elements in the input sequence as
     there is no recurrence or convolution. Using the same encoding with sinusosoidal functions as in Vaswani et. al.
@@ -56,9 +56,9 @@ def positioning_encoding(seq_length, model_dim):
     INPUT: length of the input sequence and the dimension of the model
     OUTPUT: Encoded relative positions of the data points in the input sequence
     '''
-    position = torch.arange(seq_length, dtype=torch.int).reshape(1, -1, 1)
+    position = torch.arange(seq_length, dtype=torch.int).reshape(1, -1, 1).to(device)
     #position = torch.arange(seq_length, dtype=torch.float).reshape(1, -1, 1)
-    frequencies = 1e-4 ** (2 * (torch.div(torch.arange(model_dim, dtype=torch.int), 2)) / model_dim).reshape(1, 1, -1)
+    frequencies = 1e-4 ** (2 * (torch.div(torch.arange(model_dim, dtype=torch.int), 2)) / model_dim).reshape(1, 1, -1).to(device)
     #frequencies = 1e-4 ** (2 * (torch.div(torch.arange(model_dim, dtype=torch.float), 2)) / model_dim).reshape(1, 1, -1)
     pos_enc = position * frequencies
     pos_enc[:, ::2] = torch.cos(pos_enc[:, ::2])
@@ -104,9 +104,10 @@ class Encoder(nn.Module):
     the multihead attention followed by the feed-forward layer, both with normalized residual connections
     '''
 
-    def __init__(self, n_layers=6, model_dim=512, num_heads=8, forward_dim=2048, dropout=0.2):
+    def __init__(self, device, n_layers=6, model_dim=512, num_heads=8, forward_dim=2048, dropout=0.2):
         super().__init__()
-
+        
+        self.device = device
         self.n_layers = n_layers
         key_dim = value_dim = model_dim // num_heads
 
@@ -127,7 +128,7 @@ class Encoder(nn.Module):
         seq_length, dimension = X.size(1), X.size(2)
         out = X
         # Computes the positional encodings
-        out += positioning_encoding(seq_length, dimension)
+        out += positioning_encoding(self.device, seq_length, dimension)
         # Feeds the input to the multihead attention layer followed by the feed-forward
         # layer for 'n_layers' many layers
         for _ in range(self.n_layers):
@@ -142,10 +143,10 @@ class TransformerModel(nn.Module):
     otherwise freely tunable parameters
     '''
 
-    def __init__(self, n_layers=6, model_dim=512, output_dim=512,
+    def __init__(self, device, n_layers=6, model_dim=512, output_dim=512,
                  num_heads=6, forward_dim=2048, dropout=0.2):
         super().__init__()
-        self.encoder = Encoder(n_layers, model_dim, num_heads, forward_dim, dropout)
+        self.encoder = Encoder(device, n_layers, model_dim, num_heads, forward_dim, dropout)
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(4, output_dim)#todo why 4 is hardcoded?
         self.relu = nn.ReLU(inplace=True)
@@ -158,7 +159,8 @@ class TransformerModel(nn.Module):
 class TransformerModelImpl(nn.Module):
     def __init__(self, params):
         super(TransformerModelImpl, self).__init__()
-        self.transf = TransformerModel(n_layers=params.n_layers,
+        self.transf = TransformerModel(device = params.device,
+                                       n_layers=params.n_layers,
                                        num_heads=params.num_heads,
                                        model_dim=params.model_dim,
                                        forward_dim=params.forward_dim,
@@ -199,3 +201,20 @@ class TransformerModelImpl(nn.Module):
 #  )
 #  (linear): Linear(in_features=4, out_features=2, bias=True)
 #)
+
+class TransformerModelImpl2(nn.Module):
+  def __init__(self,params):
+    super(TransformerModelImpl2,self).__init__()
+    self.device=params.device
+    encoder_layer = nn.TransformerEncoderLayer(batch_first=True, dropout=params.dropout, d_model=params.d_model, nhead=params.nhead, dim_feedforward=params.dim_feedforward)
+    self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=params.num_layers)
+    self.fc_layer1 = nn.Linear(params.d_model,1)
+
+  def forward(self,X):
+      
+    seq_length, dimension = X.size(1), X.size(2)
+    out = X
+    out += positioning_encoding(self.device, seq_length, dimension)
+    out = self.transformer_encoder(out)    
+    out = self.fc_layer3(out)
+    return out.reshape(X.shape[0],-1)
