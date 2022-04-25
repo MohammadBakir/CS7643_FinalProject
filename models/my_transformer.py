@@ -206,7 +206,8 @@ class TransformerModelImpl2(nn.Module):
   def __init__(self,params):
     super(TransformerModelImpl2,self).__init__()
     self.device=params.device
-    encoder_layer = nn.TransformerEncoderLayer(batch_first=True, dropout=params.dropout, d_model=params.d_model, nhead=params.nhead, dim_feedforward=params.dim_feedforward)
+    self.position_emb = nn.Embedding(params.seq_len, params.d_model)
+    encoder_layer = nn.TransformerEncoderLayer(batch_first=True, dropout=params.dropout, d_model=params.d_model, nhead=params.nhead, dim_feedforward=params.dim_feedforward) # could help to use: norm_first=True
     self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=params.num_layers)
     self.fc_layer = nn.Linear(params.d_model*params.seq_len,params.d_output)
 
@@ -214,7 +215,8 @@ class TransformerModelImpl2(nn.Module):
       
     seq_length, dimension = X.size(1), X.size(2)
     out = X
-    out += positioning_encoding(self.device, seq_length, dimension)
+    lookup = torch.arange(seq_length, dtype=torch.int).to(self.device)
+    out += self.position_emb(lookup)
     out = self.transformer_encoder(out)
     out = torch.flatten(out,start_dim=1)   
     out = self.fc_layer(out)
