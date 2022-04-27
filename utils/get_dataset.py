@@ -13,7 +13,9 @@ class StockData(Dataset):
         shape = (x_temp.shape[0] - num_days + 1, num_days, x_temp.shape[1])
         strides = (x_temp.strides[0], x_temp.strides[0], x_temp.strides[1])
 
+        self.features = np.lib.stride_tricks.as_strided(x_temp, shape, strides)
         self.x = torch.from_numpy(np.lib.stride_tricks.as_strided(x_temp, shape, strides))
+        self.labels = y_temp[num_days - 1:].reshape(-1, 1).astype('int')
         self.y = torch.from_numpy(y_temp[num_days - 1:].reshape(-1, 1).astype('int'))
 
         self.num_samples = self.y.shape[0]
@@ -51,12 +53,14 @@ class GetDataset(object):
         self.df['High'] = self.df['High'].pct_change()  # Create arithmetic returns column
         self.df['Low'] = self.df['Low'].pct_change()  # Create arithmetic returns column
         self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
-        self.df['EMA'] = self.df['EMA'].pct_change()
+        #self.df['EMA'] = self.df['EMA'].pct_change()
+        #self.df.drop(['EMA'], axis=1, inplace=True)
         self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
 
         # todo implement standard scaler instead, also need to move scaling to dataset's transform method
         '''Normalize price columns'''
-        self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
+        self.df[["Open", "High", "Low", "Close"]] = self.df[["Open", "High", "Low", "Close"]].apply(self.normalize_data)
+        #self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
 
         '''Drop Date Column'''
         self.df.drop(columns=['Date'], inplace=True)

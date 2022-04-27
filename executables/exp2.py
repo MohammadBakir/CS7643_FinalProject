@@ -20,7 +20,7 @@ warnings.warn = warn
 FAKE_DATA = False
 REPEAT_ONE_SMALL_BATCH = False
 USE_TRANSFORMER = False
-NUM_DAYS = 128
+NUM_DAYS = 7
 
 
 class hyperparameters:
@@ -71,7 +71,7 @@ valid_loader = DataLoader(valid_dataset,
 
 # model = modelT if USE_TRANSFORMER else modelFC
 batch_size = 32
-seq_len = 128
+seq_len = 7
 
 d_k = 256
 d_v = 256
@@ -82,13 +82,13 @@ avg_train_loss, avg_train_acc, avg_valid_loss, avg_valid_acc = [], [], [], []
 
 model = create_model(seq_len, d_k, d_v, n_heads, ff_dim)
 model.summary()
-callback = tf.keras.callbacks.ModelCheckpoint('Transformer+TimeEmbedding.hdf5',
+callback = tf.keras.callbacks.ModelCheckpoint('../outputs/Transformer+TimeEmbedding.hdf5',
                                               monitor='val_loss',
                                               save_best_only=True, verbose=1)
 
 history = model.fit(train_dataset.features, train_dataset.labels,
                     batch_size=batch_size,
-                    epochs=35,
+                    epochs=20,
                     callbacks=[callback],
                     validation_data=(valid_dataset.features, valid_dataset.labels))
 
@@ -106,15 +106,32 @@ print(history.history.keys())
 # summarize history for loss
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-# plt.show()
-plt.savefig('losscurve.png')
+plt.title('Loss Curve')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.savefig('../outputs/Loss_Curve.png')
 plt.close('all')
 
-model = tf.keras.models.load_model('Transformer+TimeEmbedding.hdf5',
+plt.plot(history.history['binary_accuracy'])
+plt.plot(history.history['val_binary_accuracy'])
+plt.title('Binary Accuracy Curve')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.savefig('../outputs/Binary_Accuracy_Curve.png')
+plt.close('all')
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Accuracy Curve')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.savefig('../outputs/Accuracy_Curve.png')
+plt.close('all')
+
+model = tf.keras.models.load_model('../outputs/Transformer+TimeEmbedding.hdf5',
                                    custom_objects={'Time2Vector': Time2Vector,
                                                    'SingleAttention': SingleAttention,
                                                    'MultiAttention': MultiAttention,
