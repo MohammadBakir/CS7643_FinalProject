@@ -124,7 +124,7 @@ def save_or_show_plot(plt_name, save):
 
 
 # cite: from Ilkay's gatech dl class
-def plot_curves(train_loss_history, train_acc_history, valid_loss_history, valid_acc_history, info, save):
+def plot_curves(train_loss_history, train_acc_history, valid_loss_history, valid_acc_history, info, save, path):
     plotting = {'Loss': {'tra_data': train_loss_history, 'val_data': valid_loss_history},
                 'Accuracy': {'tra_data': train_acc_history, 'val_data': valid_acc_history}}
     for type, data in plotting.items():
@@ -135,7 +135,7 @@ def plot_curves(train_loss_history, train_acc_history, valid_loss_history, valid
         plt.ylabel(type)
         plt.grid()
         plt.legend(loc="best")
-        save_or_show_plot(type + '_curve_' + info, save)
+        save_or_show_plot(path + type + '_curve_' + info, save)
 
 
 # cite: from Ilkay's gatech ml class

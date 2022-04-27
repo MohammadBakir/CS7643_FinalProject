@@ -1,18 +1,13 @@
 import warnings
 
-from FCNet import FCNet
-from LSTM_CNN import LSTM_CNN
-from models.my_transformer import TransformerModelImpl2
+from models.LSTM_CNN import LSTM_CNN
 
 warnings.simplefilter('ignore')
 import torch
 from torch.utils.data import DataLoader
 
-from LSTM import LSTM
-from data import GetDataset
-from data.get_dataset import StockData
-from models import TransformerModelImpl
-from utils import train, evaluate, plot_curves
+from utils.get_dataset import StockData, GetDataset
+from utils.utils import train, evaluate, plot_curves
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -56,7 +51,7 @@ MODEL = LSTM_CNN(modeltype='rnn', input_size=5, lstm_hidden_size=5, lstm_layers=
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
 
-csv = './data/SPX.csv'
+csv = '../data/SPX.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 valid_frac, test_frac = 0.2, 0.2
@@ -90,7 +85,8 @@ for epoch in range(epochs):
     avg_valid_loss.append(avl.item())
     avg_valid_acc.append(ava)
 
-plot_curves(avg_train_loss, avg_train_acc, avg_valid_loss, avg_valid_acc, info=image_name, save=True)
+plot_curves(avg_train_loss, avg_train_acc, avg_valid_loss, avg_valid_acc, info=image_name, save=True,
+            path='../outputs/')
 
 a, b = train_dataset[:]
 print(a.shape)
