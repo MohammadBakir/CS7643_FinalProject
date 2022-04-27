@@ -117,6 +117,8 @@ class GetDataset(object):
     '''Normalize'''
     self.df[['ema10', 'ema20', 'ma10', 'ma20','ma50']] = self.df[['ema10', 'ema20', 'ma10', 'ma20','ma50']].apply(self.normalize_data)
     
+    target_column_data=self.df.pop('Next_Day_Change')
+    self.df['Next_Day_Change']=target_column_data#make target the last column
     return self.df
 
 
