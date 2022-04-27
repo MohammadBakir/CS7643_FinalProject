@@ -13,8 +13,10 @@ class StockData(Dataset):
         shape = (x_temp.shape[0]-num_days+1, num_days, x_temp.shape[1])
         strides = (x_temp.strides[0], x_temp.strides[0], x_temp.strides[1])
 
-        self.x = torch.from_numpy(np.lib.stride_tricks.as_strided(x_temp, shape, strides))
-        self.y = torch.from_numpy(y_temp[num_days-1:].reshape(-1,1).astype('int'))
+        self.features = np.lib.stride_tricks.as_strided(x_temp, shape, strides)
+        self.x = torch.from_numpy(self.features)
+        self.labels = y_temp[num_days - 1:].reshape(-1, 1).astype('int')
+        self.y = torch.from_numpy(self.labels)
         
         self.num_samples = self.y.shape[0]
 
