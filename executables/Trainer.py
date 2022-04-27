@@ -23,7 +23,7 @@ class HYPERPARAMETERS:
     DEVICE = device
     TMI_N_LAYERS = 4
     TMI_NUM_HEADS = 2
-    FEATURES = 10
+    FEATURES = 9
     TMI_FORWARD_DIM = 64
     TMI_OUTPUT_DIM = 6
     OUTPUT_DIM = 1
@@ -36,7 +36,7 @@ class params:
     device = device
     num_layers = 1
     nhead = 1
-    d_model = 10
+    d_model = 9
     dim_feedforward = 128
     d_output = 1
     dropout = 3e-4
@@ -45,11 +45,14 @@ class params:
 
 epochs = 100
 image_name = 'RNN-CNN_Trading_Indicators_POS_NEG_Pred_Calc'
-#MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
-#MODEL = TransformerModelImpl2(params).to(device)
-#MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
+model_save_path_and_name = "../outputs/RNN-CNN.pth"
+save_model = False
+
+# MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
+# MODEL = TransformerModelImpl2(params).to(device)
+# MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
-#MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
+# MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
 MODEL = LSTM_CNN(modeltype='rnn', input_size=9, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, leaky_relu=0.2)
 
@@ -107,8 +110,9 @@ predictions = MODEL(features.float())
 predictions[predictions > 0] = 1
 predictions[predictions <= 0] = 0
 pred = predictions.long()
-#pred = torch.round(torch.sigmoid(predictions)).long()
+# pred = torch.round(torch.sigmoid(predictions)).long()
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
           'weighted avg']['f1-score'])
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy()))
-torch.save(MODEL.state_dict(), "../outputs/RNN-CNN.pth")
+if save_model:
+    torch.save(MODEL.state_dict(), model_save_path_and_name)
