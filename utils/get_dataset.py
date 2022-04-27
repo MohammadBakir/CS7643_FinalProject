@@ -48,19 +48,27 @@ class GetDataset(object):
         self.df['Next_Day_Change'] = self.df['change']
         self.df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
 
+        '''Indicators'''
+        self.df['EMA'] = np.where(self.df.Close > self.df.EMA, 1.0, 0.0)
+        self.df['SuperTrend1'] = np.where(self.df.Close > self.df.SuperTrend1, 1.0, 0.0)
+        self.df['SuperTrend2'] = np.where(self.df.Close > self.df.SuperTrend2, 1.0, 0.0)
+        self.df['SuperTrend3'] = np.where(self.df.Close > self.df.SuperTrend3, 1.0, 0.0)
+        self.df['SuperTrend4'] = np.where(self.df.Close > self.df.SuperTrend4, 1.0, 0.0)
+
         '''Calculate percentage change'''
         self.df['Open'] = self.df['Open'].pct_change()  # Create arithmetic returns column
         self.df['High'] = self.df['High'].pct_change()  # Create arithmetic returns column
         self.df['Low'] = self.df['Low'].pct_change()  # Create arithmetic returns column
         self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
-        #self.df['EMA'] = self.df['EMA'].pct_change()
-        #self.df.drop(['EMA'], axis=1, inplace=True)
+        self.df['Volume'] = self.df['Volume'].pct_change()
+
         self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
 
         # todo implement standard scaler instead, also need to move scaling to dataset's transform method
         '''Normalize price columns'''
-        self.df[["Open", "High", "Low", "Close"]] = self.df[["Open", "High", "Low", "Close"]].apply(self.normalize_data)
-        #self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
+        self.df[["Open", "High", "Low", "Close", "Volume"]] = self.df[["Open", "High", "Low", "Close", "Volume"]].apply(
+            self.normalize_data)
+        # self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
 
         '''Drop Date Column'''
         self.df.drop(columns=['Date'], inplace=True)
@@ -70,8 +78,8 @@ class GetDataset(object):
     def get_data2(self, future_days):
         '''Get Data into Dataframe'''
         self.cols = pd.read_csv(self.csv, nrows=0).columns.tolist()
-        self.data = pd.read_csv(self.csv, sep = ',', names=self.cols, skiprows=[0])
-        self.df = self.data.iloc[:,0].str.split(',', expand=True)
+        self.data = pd.read_csv(self.csv, sep=',', names=self.cols, skiprows=[0])
+        self.df = self.data.iloc[:, 0].str.split(',', expand=True)
         self.cols = self.cols[0].split(',')
         self.df.columns = self.cols
         self.df.drop('Symbol', 1, inplace=True)
@@ -80,44 +88,43 @@ class GetDataset(object):
         self.df.rename({'DateTime': 'Date'}, axis=1, inplace=True)
 
         '''Generate Classification Column'''
-        #note ilkay made some fixes
-        self.df['Next_Close_Day'] = self.df['Close'].shift(-1*future_days)
-        self.df.dropna(how='any', axis=0, inplace=True) #if this is not done if/else logic below will fill NaN with 0
+        # note ilkay made some fixes
+        self.df['Next_Close_Day'] = self.df['Close'].shift(-1 * future_days)
+        self.df.dropna(how='any', axis=0, inplace=True)  # if this is not done if/else logic below will fill NaN with 0
         comparison_column = np.where(self.df["Next_Close_Day"] > self.df["Close"], int(1), int(0))
         self.df["change"] = comparison_column
         self.df['Next_Day_Change'] = self.df['change']
-        self.df.drop(["Next_Close_Day","change"], axis=1, inplace=True)
+        self.df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
 
         '''Calculate percentage change'''
         self.df['ema10'] = self.df['Close'].ewm(span=10).mean()
         self.df['ema20'] = self.df['Close'].ewm(span=20).mean()
-        self.df['ma10']  = self.df['Close'].rolling(10).mean()
-        self.df['ma20']  = self.df['Close'].rolling(20).mean()
-        self.df['ma50']  = self.df['Close'].rolling(50).mean()
+        self.df['ma10'] = self.df['Close'].rolling(10).mean()
+        self.df['ma20'] = self.df['Close'].rolling(20).mean()
+        self.df['ma50'] = self.df['Close'].rolling(50).mean()
 
         self.df['ema10'] /= self.df['Close']
         self.df['ema20'] /= self.df['Close']
-        self.df['ma10']  /= self.df['Close']
-        self.df['ma20']  /= self.df['Close']
-        self.df['ma50']  /= self.df['Close']
+        self.df['ma10'] /= self.df['Close']
+        self.df['ma20'] /= self.df['Close']
+        self.df['ma50'] /= self.df['Close']
 
         self.df['ema10'] -= 1
         self.df['ema20'] -= 1
-        self.df['ma10']  -= 1
-        self.df['ma20']  -= 1
-        self.df['ma50']  -= 1
+        self.df['ma10'] -= 1
+        self.df['ma20'] -= 1
+        self.df['ma50'] -= 1
 
-        self.df.dropna(how='any', axis=0, inplace=True) # Drop all rows with NaN values
-
+        self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
 
         '''Drop Date Column'''
-        self.df.drop(columns=['Date','Close', 'Open', 'Low', 'High'], inplace=True)
+        self.df.drop(columns=['Date', 'Close', 'Open', 'Low', 'High'], inplace=True)
 
         '''Normalize'''
-        self.df[['ema10', 'ema20', 'ma10', 'ma20','ma50']] = self.df[['ema10', 'ema20', 'ma10', 'ma20','ma50']].apply(self.normalize_data)
+        self.df[['ema10', 'ema20', 'ma10', 'ma20', 'ma50']] = self.df[['ema10', 'ema20', 'ma10', 'ma20', 'ma50']].apply(
+            self.normalize_data)
 
         return self.df
-
 
     def normalize_data(self, df):
         min = df.min()

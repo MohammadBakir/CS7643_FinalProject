@@ -39,19 +39,19 @@ class params:
 
 
 epochs = 100
-image_name = 'FCNET'
+image_name = 'RNN-CNN_With_Trading_Indicators'
 # MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
 # MODEL = TransformerModelImpl2(params).to(device)
 # MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
 # MODEL = LSTM(modeltype='gru', input_size=5, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
-MODEL = LSTM_CNN(modeltype='rnn', input_size=5, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
+MODEL = LSTM_CNN(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, leaky_relu=0.2)
 
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
 
-csv = '../data/SPX.csv'
+csv = '../data/SPY.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 valid_frac, test_frac = 0.2, 0.2
@@ -77,9 +77,9 @@ for epoch in range(epochs):
     train_loss, atl, ata = train(MODEL, train_loader, OPTIMIZER, CRITERION, device)
     # scheduler.step(train_loss)
     _, avl, ava = evaluate(MODEL, valid_loader, CRITERION, device)
-    if epoch % 50 == 1:
-        print("Epoch %d: Training Loss: %.4f. Training Acc: %.4f. Validation Loss: %.4f. Validation Acc: %.4f." % (
-            epoch + 1, atl, ata, avl, ava))
+    # if epoch % 50 == 1:
+    print("Epoch %d: Training Loss: %.4f. Training Acc: %.4f. Validation Loss: %.4f. Validation Acc: %.4f." % (
+        epoch + 1, atl, ata, avl, ava))
     avg_train_loss.append(atl.item())
     avg_train_acc.append(ata)
     avg_valid_loss.append(avl.item())
