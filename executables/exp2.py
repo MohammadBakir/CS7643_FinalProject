@@ -35,7 +35,7 @@ class hyperparameters:
     batch_size = 1024
 
 
-csv = '../data/SPXDailyData.csv'
+csv = '../data/SPY.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 if REPEAT_ONE_SMALL_BATCH:

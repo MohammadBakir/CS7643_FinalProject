@@ -1,6 +1,10 @@
 import warnings
 
+from models import TransformerModelImpl
+from models.FullyConnectedNetwork import FCNet
+from models.LSTM import LSTM
 from models.LSTM_CNN import LSTM_CNN
+from models.my_transformer import TransformerModelImpl2
 
 warnings.simplefilter('ignore')
 import torch
@@ -16,14 +20,14 @@ class HYPERPARAMETERS:
     NUM_DAYS = 7
     BATCH_SIZE = 32
     DEVICE = device
-    TMI_N_LAYERS = 5
-    TMI_NUM_HEADS = 5
-    FEATURES = 5
+    TMI_N_LAYERS = 4
+    TMI_NUM_HEADS = 2
+    FEATURES = 10
     TMI_FORWARD_DIM = 64
-    TMI_OUTPUT_DIM = 4
+    TMI_OUTPUT_DIM = 6
     OUTPUT_DIM = 1
-    DROPOUT = 3e-4
-    LR = 0.01
+    DROPOUT = 0.1
+    LR = 0.001
     SEQ_LENGTH = 5
 
 
@@ -31,20 +35,20 @@ class params:
     device = device
     num_layers = 1
     nhead = 1
-    d_model = 5
+    d_model = 10
     dim_feedforward = 128
     d_output = 1
     dropout = 3e-4
     seq_len = 7
 
 
-epochs = 100
-image_name = 'RNN-CNN_With_Trading_Indicators'
-# MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
-# MODEL = TransformerModelImpl2(params).to(device)
-# MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
+epochs = 200
+image_name = 'Test_With_Trading_Indicators'
+#MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
+#MODEL = TransformerModelImpl2(params).to(device)
+#MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
-# MODEL = LSTM(modeltype='gru', input_size=5, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
+#MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
 MODEL = LSTM_CNN(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, leaky_relu=0.2)
 
