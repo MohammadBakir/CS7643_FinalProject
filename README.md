@@ -1,8 +1,15 @@
-# W&B Demo Project
-Oboarding Demo Project
+# CS7643_FinalProject
+Team Project CS7643
 
-# Market Prediction Using Transformer Model
+# Market Prediction using Transformer Models (Title TBD)
 
 ## Authors
 
-**Mohammad Bakir** 
+* **Harsha Aswath** 
+* **Mohammad Bakir** 
+* **Sari Ilkay** 
+* **Nick Lisichenok** 
+
+## License
+
+This project is licensed under the MIT License
