@@ -77,7 +77,10 @@ def train(model, dataloader, optimizer, criterion, device, scheduler=None, grad_
         # progress_bar.set_description_str(
         #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
 
-        pred = torch.round(torch.sigmoid(out)).long()
+        # pred = torch.round(torch.sigmoid(out)).long()
+        out[out > 0] = 1
+        out[out <= 0] = 0
+        pred = out.long()
         batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
             'weighted avg']['f1-score']
         losses.update(loss, out.shape[0])
@@ -104,7 +107,10 @@ def evaluate(model, dataloader, criterion, device):
             # progress_bar.set_description_str(
             #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
 
-            pred = torch.round(torch.sigmoid(out)).long()
+            #pred = torch.round(torch.sigmoid(out)).long()
+            out[out > 0] = 1
+            out[out <= 0] = 0
+            pred = out.long()
             batch_acc = \
             classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
                 'weighted avg']['f1-score']

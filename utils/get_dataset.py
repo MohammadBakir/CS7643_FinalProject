@@ -32,7 +32,7 @@ class GetDataset(object):
         super(GetDataset, self).__init__()
         self.csv = csv
 
-    def get_data(self):
+    def get_data(self, isReal=False):
         '''Get Data into Dataframe'''
         self.df = pd.read_csv(self.csv)
         self.df.drop('Symbol', 1, inplace=True)
@@ -42,7 +42,8 @@ class GetDataset(object):
         '''Generate Classification Column'''
         # note ilkay made some fixes
         self.df['Next_Close_Day'] = self.df['Close'].shift(-1)
-        self.df.dropna(how='any', axis=0, inplace=True)  # if this is not done if/else logic below will fill NaN with 0
+        if not isReal:
+            self.df.dropna(how='any', axis=0, inplace=True)  # if this is not done if/else logic below will fill NaN with 0
         comparison_column = np.where(self.df["Next_Close_Day"] > self.df["Close"], int(1), int(0))
         self.df["change"] = comparison_column
         self.df['Next_Day_Change'] = self.df['change']
@@ -62,16 +63,18 @@ class GetDataset(object):
         self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
         self.df['Volume'] = self.df['Volume'].pct_change()
 
-        self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
-
+        if isReal:
+            self.df = self.df.iloc[1:, :]
+        else:
+            self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
         # todo implement standard scaler instead, also need to move scaling to dataset's transform method
         '''Normalize price columns'''
-        self.df[["Open", "High", "Low", "Close", "Volume"]] = self.df[["Open", "High", "Low", "Close", "Volume"]].apply(
-            self.normalize_data)
+        #self.df[["Open", "High", "Low", "Close", "Volume"]] = self.df[["Open", "High", "Low", "Close", "Volume"]].apply(
+        #    self.normalize_data)
         # self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
 
         '''Drop Date Column'''
-        self.df.drop(columns=['Date'], inplace=True)
+        self.df.drop(columns=['Date', 'SuperTrend4'], inplace=True)
 
         return self.df
 

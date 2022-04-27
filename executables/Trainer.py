@@ -5,6 +5,7 @@ from models.FullyConnectedNetwork import FCNet
 from models.LSTM import LSTM
 from models.LSTM_CNN import LSTM_CNN
 from models.my_transformer import TransformerModelImpl2
+import torchvision.models as tmodels
 
 warnings.simplefilter('ignore')
 import torch
@@ -17,7 +18,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class HYPERPARAMETERS:
-    NUM_DAYS = 7
+    NUM_DAYS = 3
     BATCH_SIZE = 32
     DEVICE = device
     TMI_N_LAYERS = 4
@@ -42,14 +43,14 @@ class params:
     seq_len = 7
 
 
-epochs = 200
-image_name = 'Test_With_Trading_Indicators'
+epochs = 100
+image_name = 'RNN-CNN_Trading_Indicators_POS_NEG_Pred_Calc'
 #MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
 #MODEL = TransformerModelImpl2(params).to(device)
 #MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
 #MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
-MODEL = LSTM_CNN(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
+MODEL = LSTM_CNN(modeltype='rnn', input_size=9, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, leaky_relu=0.2)
 
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
@@ -103,7 +104,11 @@ MODEL.eval()
 features, targets = test_dataset[:]
 features, targets = features.to(device), targets.to(device)
 predictions = MODEL(features.float())
-pred = torch.round(torch.sigmoid(predictions)).long()
+predictions[predictions > 0] = 1
+predictions[predictions <= 0] = 0
+pred = predictions.long()
+#pred = torch.round(torch.sigmoid(predictions)).long()
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
           'weighted avg']['f1-score'])
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy()))
+torch.save(MODEL.state_dict(), "../outputs/RNN-CNN.pth")
