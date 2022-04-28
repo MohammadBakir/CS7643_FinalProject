@@ -48,7 +48,7 @@ class hyperparameters:
 csv = './data/SPY-Indicators.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
-dataset = dataset[:][DROP_FIRST_N_DAYS:]
+# dataset = dataset[:][DROP_FIRST_N_DAYS:]
 if REPEAT_ONE_SMALL_BATCH:
     dataset = dataset[0:10]
     if FAKE_DATA:

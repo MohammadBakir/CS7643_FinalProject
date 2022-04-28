@@ -6,18 +6,17 @@ import torch
 class StockData(Dataset):
 
     def __init__(self, data, num_days=2):
+        x_temp = data[:, :-1]
+        y_temp = data[:, -1]
 
-        x_temp=data[:,:-1]
-        y_temp=data[:,-1]
-
-        shape = (x_temp.shape[0]-num_days+1, num_days, x_temp.shape[1])
+        shape = (x_temp.shape[0] - num_days + 1, num_days, x_temp.shape[1])
         strides = (x_temp.strides[0], x_temp.strides[0], x_temp.strides[1])
 
         self.features = np.lib.stride_tricks.as_strided(x_temp, shape, strides)
-        self.x = torch.from_numpy(self.features)
+        self.x = torch.from_numpy(np.lib.stride_tricks.as_strided(x_temp, shape, strides))
         self.labels = y_temp[num_days - 1:].reshape(-1, 1).astype('int')
-        self.y = torch.from_numpy(self.labels)
-        
+        self.y = torch.from_numpy(y_temp[num_days - 1:].reshape(-1, 1).astype('int'))
+
         self.num_samples = self.y.shape[0]
 
     def __getitem__(self, idx):
