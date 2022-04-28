@@ -6,6 +6,7 @@ from models.LSTM import LSTM
 from models.LSTM_CNN import LSTM_CNN
 from models.my_transformer import TransformerModelImpl2
 import torchvision.models as tmodels
+import torch.nn.functional as f
 
 warnings.simplefilter('ignore')
 import torch
@@ -24,7 +25,7 @@ class HYPERPARAMETERS:
     TMI_N_LAYERS = 4
     TMI_NUM_HEADS = 2
     FEATURES = 9
-    TMI_FORWARD_DIM = 64
+    TMI_FORWARD_DIM = 8
     TMI_OUTPUT_DIM = 6
     OUTPUT_DIM = 1
     DROPOUT = 0.1
@@ -44,22 +45,23 @@ class params:
 
 
 epochs = 100
-image_name = 'RNN-CNN_Trading_Indicators_POS_NEG_Pred_Calc'
-model_save_path_and_name = "../outputs/RNN-CNN.pth"
-save_model = False
+image_name = 'RNN-CNN_Various_Trading_Indicators'
+model_save_path_and_name = "../outputs/RNN-CNN_Various_Indicators.pth"
+save_model = True
 
-# MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
-# MODEL = TransformerModelImpl2(params).to(device)
-# MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
+#MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
+# #MODEL = TransformerModelImpl2(params).to(device)
+#MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
 # MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
-MODEL = LSTM_CNN(modeltype='rnn', input_size=9, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
+MODEL = LSTM_CNN(modeltype='rnn', input_size=13, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, leaky_relu=0.2)
+#MODEL = FullyConnectedNetwork
 
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
 
-csv = '../data/SPY.csv'
+csv = '../data/SPY-Indicators.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 valid_frac, test_frac = 0.2, 0.2
@@ -107,9 +109,9 @@ MODEL.eval()
 features, targets = test_dataset[:]
 features, targets = features.to(device), targets.to(device)
 predictions = MODEL(features.float())
-predictions[predictions > 0] = 1
-predictions[predictions <= 0] = 0
-pred = predictions.long()
+# Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
+# Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
+pred = torch.round(f.sigmoid(predictions)).long()
 # pred = torch.round(torch.sigmoid(predictions)).long()
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
           'weighted avg']['f1-score'])

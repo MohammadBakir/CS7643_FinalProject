@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.manifold import TSNE
 from sklearn.metrics import classification_report
 import torch
+import torch.nn.functional as f
 
 
 def accuracy(output, target):
@@ -66,6 +67,8 @@ def train(model, dataloader, optimizer, criterion, device, scheduler=None, grad_
         data, target = data.to(device), target.to(device)
         out = model(data.float())
         optimizer.zero_grad()
+        # Note: input data to the BCEWithLogitsLoss can be anything. The 'Examples:' in the link below can generate any value, positive or negative
+        # Reference: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
         loss = criterion(out, target.float())
         total_loss += loss
         loss.backward()
@@ -78,9 +81,13 @@ def train(model, dataloader, optimizer, criterion, device, scheduler=None, grad_
         #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
 
         # pred = torch.round(torch.sigmoid(out)).long()
-        out[out > 0] = 1
-        out[out <= 0] = 0
-        pred = out.long()
+        # out[out > 0] = 1
+        # out[out <= 0] = 0
+        # pred = out.long()
+
+        # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
+        # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
+        pred = torch.round(f.sigmoid(out)).long()
         batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
             'weighted avg']['f1-score']
         losses.update(loss, out.shape[0])
@@ -102,18 +109,24 @@ def evaluate(model, dataloader, criterion, device):
         for batch_idx, (data, target) in enumerate(progress_bar):
             data, target = data.to(device), target.to(device)
             out = model(data.float())
+            # Note: input data to the BCEWithLogitsLoss can be anything. The 'Examples:' in the link below can generate any value, positive or negative
+            # Reference: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
             loss = criterion(out, target.float())
             total_loss += loss
             # progress_bar.set_description_str(
             #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
 
-            #pred = torch.round(torch.sigmoid(out)).long()
-            out[out > 0] = 1
-            out[out <= 0] = 0
-            pred = out.long()
+            # pred = torch.round(torch.sigmoid(out)).long()
+            # out[out > 0] = 1
+            # out[out <= 0] = 0
+            # pred = out.long()
+
+            # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
+            # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
+            pred = torch.round(f.sigmoid(out)).long()
             batch_acc = \
-            classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
-                'weighted avg']['f1-score']
+                classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
+                    'weighted avg']['f1-score']
             losses.update(loss, out.shape[0])
             acc.update(batch_acc, out.shape[0])
 

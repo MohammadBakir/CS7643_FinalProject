@@ -39,22 +39,15 @@ class GetDataset(object):
         self.df['DateTime'] = pd.to_datetime(self.df['DateTime']).dt.date
         self.df.rename({'DateTime': 'Date'}, axis=1, inplace=True)
 
-        '''Generate Classification Column'''
-        # note ilkay made some fixes
-        self.df['Next_Close_Day'] = self.df['Close'].shift(-1)
-        if not isReal:
-            self.df.dropna(how='any', axis=0, inplace=True)  # if this is not done if/else logic below will fill NaN with 0
-        comparison_column = np.where(self.df["Next_Close_Day"] > self.df["Close"], int(1), int(0))
-        self.df["change"] = comparison_column
-        self.df['Next_Day_Change'] = self.df['change']
-        self.df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
-
         '''Indicators'''
         self.df['EMA'] = np.where(self.df.Close > self.df.EMA, 1.0, 0.0)
         self.df['SuperTrend1'] = np.where(self.df.Close > self.df.SuperTrend1, 1.0, 0.0)
         self.df['SuperTrend2'] = np.where(self.df.Close > self.df.SuperTrend2, 1.0, 0.0)
         self.df['SuperTrend3'] = np.where(self.df.Close > self.df.SuperTrend3, 1.0, 0.0)
         self.df['SuperTrend4'] = np.where(self.df.Close > self.df.SuperTrend4, 1.0, 0.0)
+        self.df['MACD'] = np.where(self.df.macdValue > self.df.macdAvg, 1.0, 0)
+        self.df['BollingerUpperDifference'] = self.df['UpperBollingerBand'] - self.df['Close']
+        self.df['BollingerLowerDifference'] = self.df['Close'] - self.df['LowerBollingerBand']
 
         '''Calculate percentage change'''
         self.df['Open'] = self.df['Open'].pct_change()  # Create arithmetic returns column
@@ -62,6 +55,19 @@ class GetDataset(object):
         self.df['Low'] = self.df['Low'].pct_change()  # Create arithmetic returns column
         self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
         self.df['Volume'] = self.df['Volume'].pct_change()
+        self.df['BollingerUpperDifference'] = self.df['BollingerUpperDifference'].pct_change()
+        self.df['BollingerLowerDifference'] = self.df['BollingerLowerDifference'].pct_change()
+
+        '''Generate Classification Column'''
+        # note ilkay made some fixes
+        self.df['Next_Close_Day'] = self.df['Close'].shift(-1)
+        if not isReal:
+            self.df.dropna(how='any', axis=0,
+                           inplace=True)  # if this is not done if/else logic below will fill NaN with 0
+        comparison_column = np.where(self.df["Next_Close_Day"] > self.df["Close"], int(1), int(0))
+        self.df["change"] = comparison_column
+        self.df['Next_Day_Change'] = self.df['change']
+        self.df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
 
         if isReal:
             self.df = self.df.iloc[1:, :]
@@ -69,12 +75,13 @@ class GetDataset(object):
             self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
         # todo implement standard scaler instead, also need to move scaling to dataset's transform method
         '''Normalize price columns'''
-        #self.df[["Open", "High", "Low", "Close", "Volume"]] = self.df[["Open", "High", "Low", "Close", "Volume"]].apply(
+        # self.df[["Open", "High", "Low", "Close", "Volume"]] = self.df[["Open", "High", "Low", "Close", "Volume"]].apply(
         #    self.normalize_data)
         # self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
 
-        '''Drop Date Column'''
-        self.df.drop(columns=['Date', 'SuperTrend4'], inplace=True)
+        '''Drop Unneeded Columns'''
+        self.df.drop(columns=['Date', 'SuperTrend4', 'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
+                              'macdValue', 'macdAvg'], inplace=True)
 
         return self.df
 
