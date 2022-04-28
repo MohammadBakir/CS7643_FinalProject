@@ -11,7 +11,7 @@ def create_model(seq_len, d_k, d_v, n_heads, ff_dim):
     attn_layer3 = TransformerEncoder(d_k, d_v, n_heads, ff_dim)
 
     '''Construct model'''
-    in_seq = tf.keras.Input(shape=(seq_len, 16))
+    in_seq = tf.keras.Input(shape=(seq_len, 13))
     x = time_embedding(in_seq)
     x = tf.keras.layers.Concatenate(axis=-1)([in_seq, x])
     x = attn_layer1((x, x, x))
