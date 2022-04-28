@@ -29,6 +29,8 @@ FAKE_DATA=False
 REPEAT_ONE_SMALL_BATCH=False
 USE_TRANSFORMER=False
 NUM_DAYS=128
+DROP_FIRST_N_DAYS=10000
+
 
 
 class hyperparameters:
@@ -46,6 +48,7 @@ class hyperparameters:
 csv = './data/SPXDailyData.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
+dataset = dataset[:][DROP_FIRST_N_DAYS:]
 if REPEAT_ONE_SMALL_BATCH:
     dataset = dataset[0:10]
     if FAKE_DATA:
@@ -101,8 +104,8 @@ history = model.fit(train_dataset.features, train_dataset.labels,
 print(history.history.keys())
 # //'loss', 'mae', 'mape', 'val_loss', 'val_mae', 'val_mape']
 # summarize history for accuracy
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
+plt.plot(history.history['binary_accuracy'])
+plt.plot(history.history['val_binary_accuracy'])
 plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')

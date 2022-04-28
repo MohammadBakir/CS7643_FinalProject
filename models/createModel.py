@@ -24,5 +24,5 @@ def create_model(seq_len, d_k, d_v, n_heads, ff_dim):
     out = tf.keras.layers.Dense(1, activation='linear')(x)
 
     model = tf.keras.models.Model(inputs=in_seq, outputs=out)
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['mae', 'mape', tf.keras.metrics.Accuracy()])
+    model.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), optimizer='adam', metrics=['mae', 'mape', 'binary_accuracy'])
     return model
