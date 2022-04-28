@@ -28,7 +28,7 @@ warnings.warn = warn
 FAKE_DATA=False
 REPEAT_ONE_SMALL_BATCH=False
 USE_TRANSFORMER=False
-NUM_DAYS=128
+NUM_DAYS=8
 DROP_FIRST_N_DAYS=10000
 
 
@@ -45,7 +45,7 @@ class hyperparameters:
     batch_size = 1024
 
 
-csv = './data/SPXDailyData.csv'
+csv = './data/SPY-Indicators.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 dataset = dataset[:][DROP_FIRST_N_DAYS:]
@@ -80,7 +80,7 @@ valid_loader = DataLoader(valid_dataset, batch_size=valid_dataset.num_samples if
 
 # model = modelT if USE_TRANSFORMER else modelFC
 batch_size = 32
-seq_len = 128
+seq_len = 8
 
 d_k = 256
 d_v = 256
