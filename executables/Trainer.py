@@ -49,7 +49,7 @@ image_name = 'RNN-CNN_SPY_ST_Python_Testing'
 model_save_path_and_name = "../outputs/RNN-CNN_SPY_ST_Python_Testing-test.pth"
 save_model = True
 overlap = False
-shuffle = False
+shuffle = True
 
 # MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
 # #MODEL = TransformerModelImpl2(params).to(device)
@@ -63,7 +63,7 @@ MODEL = LSTM_CNN(modeltype='rnn', input_size=6, lstm_hidden_size=5, lstm_layers=
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
 
-csv = '../data/SPY-Indicators.csv'
+csv = '../data/SPX-Indicators.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 valid_frac, test_frac = 0.2, 0.2
