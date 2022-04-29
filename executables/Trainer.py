@@ -63,7 +63,7 @@ MODEL = LSTM_CNN(modeltype='rnn', input_size=6, lstm_hidden_size=5, lstm_layers=
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
 
-csv = '../data/SPX-Indicators.csv'
+csv = '../data/SPY-Indicators.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 valid_frac, test_frac = 0.2, 0.2
