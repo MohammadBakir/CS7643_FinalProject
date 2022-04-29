@@ -19,12 +19,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class HYPERPARAMETERS:
-    NUM_DAYS = 3
-    BATCH_SIZE = 32
+    NUM_DAYS = 5
+    BATCH_SIZE = 8
     DEVICE = device
     TMI_N_LAYERS = 4
     TMI_NUM_HEADS = 2
-    FEATURES = 9
+    FEATURES = 13
     TMI_FORWARD_DIM = 8
     TMI_OUTPUT_DIM = 6
     OUTPUT_DIM = 1
@@ -45,18 +45,20 @@ class params:
 
 
 epochs = 100
-image_name = 'RNN-CNN_Various_Trading_Indicators'
-model_save_path_and_name = "../outputs/RNN-CNN_Various_Indicators.pth"
+image_name = 'RNN-CNN_SPY_ST_Python_Testing'
+model_save_path_and_name = "../outputs/RNN-CNN_SPY_ST_Python_Testing-test.pth"
 save_model = True
+overlap = False
+shuffle = False
 
-#MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
+# MODEL = TransformerModelImpl(HYPERPARAMETERS).to(device)
 # #MODEL = TransformerModelImpl2(params).to(device)
-#MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
+# MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
 # MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
-MODEL = LSTM_CNN(modeltype='rnn', input_size=13, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
+MODEL = LSTM_CNN(modeltype='rnn', input_size=6, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, leaky_relu=0.2)
-#MODEL = FullyConnectedNetwork
+# MODEL = FullyConnectedNetwork
 
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
@@ -70,15 +72,15 @@ valid_sz = int(dataset.shape[0] * (valid_frac))
 df_train = dataset[0:train_sz]
 df_valid = dataset[train_sz:train_sz + valid_sz]
 df_test = dataset[train_sz + valid_sz:]
-train_dataset = StockData(df_train.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS)
-valid_dataset = StockData(df_valid.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS)
-test_dataset = StockData(df_test.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS)
+train_dataset = StockData(df_train.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS, overlap=overlap)
+valid_dataset = StockData(df_valid.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS, overlap=overlap)
+test_dataset = StockData(df_test.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS, overlap=overlap)
 train_loader = DataLoader(train_dataset,
                           batch_size=HYPERPARAMETERS.BATCH_SIZE,
-                          shuffle=False)
+                          shuffle=shuffle)
 valid_loader = DataLoader(valid_dataset,
                           batch_size=HYPERPARAMETERS.BATCH_SIZE,
-                          shuffle=False)
+                          shuffle=shuffle)
 
 avg_train_loss, avg_train_acc, avg_valid_loss, avg_valid_acc = [], [], [], []
 MODEL.float()
@@ -112,7 +114,6 @@ predictions = MODEL(features.float())
 # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
 # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
 pred = torch.round(f.sigmoid(predictions)).long()
-# pred = torch.round(torch.sigmoid(predictions)).long()
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
           'weighted avg']['f1-score'])
 print(classification_report(targets.cpu().detach().numpy(), pred.cpu().detach().numpy()))

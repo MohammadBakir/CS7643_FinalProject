@@ -76,15 +76,6 @@ def train(model, dataloader, optimizer, criterion, device, scheduler=None, grad_
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         # plot_grad_flow(model.named_parameters())
         optimizer.step()
-
-        # progress_bar.set_description_str(
-        #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
-
-        # pred = torch.round(torch.sigmoid(out)).long()
-        # out[out > 0] = 1
-        # out[out <= 0] = 0
-        # pred = out.long()
-
         # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
         # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
         pred = torch.round(f.sigmoid(out)).long()
@@ -115,11 +106,6 @@ def evaluate(model, dataloader, criterion, device):
             total_loss += loss
             # progress_bar.set_description_str(
             #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
-
-            # pred = torch.round(torch.sigmoid(out)).long()
-            # out[out > 0] = 1
-            # out[out <= 0] = 0
-            # pred = out.long()
 
             # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
             # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor

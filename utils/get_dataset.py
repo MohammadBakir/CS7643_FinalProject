@@ -6,18 +6,23 @@ import torch
 
 class StockData(Dataset):
 
-    def __init__(self, data, num_days=2):
+    def __init__(self, data, num_days=2, overlap=True):
         x_temp = data[:, :-1]
         y_temp = data[:, -1]
 
         shape = (x_temp.shape[0] - num_days + 1, num_days, x_temp.shape[1])
         strides = (x_temp.strides[0], x_temp.strides[0], x_temp.strides[1])
 
-        self.features = np.lib.stride_tricks.as_strided(x_temp, shape, strides)
-        self.x = torch.from_numpy(np.lib.stride_tricks.as_strided(x_temp, shape, strides))
-        self.labels = y_temp[num_days - 1:].reshape(-1, 1).astype('int')
-        self.y = torch.from_numpy(y_temp[num_days - 1:].reshape(-1, 1).astype('int'))
-
+        if overlap:
+            self.features = np.lib.stride_tricks.as_strided(x_temp, shape, strides)
+            self.x = torch.from_numpy(np.lib.stride_tricks.as_strided(x_temp, shape, strides))
+            self.labels = y_temp[num_days - 1:].reshape(-1, 1).astype('int')
+            self.y = torch.from_numpy(y_temp[num_days - 1:].reshape(-1, 1).astype('int'))
+        else:
+            self.features = np.lib.stride_tricks.as_strided(x_temp, shape, strides)
+            self.x = torch.from_numpy(np.lib.stride_tricks.as_strided(x_temp, shape, strides)[0::num_days])
+            self.labels = y_temp[num_days - 1:].reshape(-1, 1).astype('int')
+            self.y = torch.from_numpy(y_temp[num_days - 1:].reshape(-1, 1).astype('int'))[0::num_days]
         self.num_samples = self.y.shape[0]
 
     def __getitem__(self, idx):
@@ -32,7 +37,7 @@ class GetDataset(object):
         super(GetDataset, self).__init__()
         self.csv = csv
 
-    def get_data(self, isReal=False):
+    def get_data(self):
         '''Get Data into Dataframe'''
         self.df = pd.read_csv(self.csv)
         self.df.drop('Symbol', 1, inplace=True)
@@ -41,6 +46,17 @@ class GetDataset(object):
 
         '''Indicators'''
         self.df['EMA'] = np.where(self.df.Close > self.df.EMA, 1.0, 0.0)
+
+        # Using indicator translated to Python
+        # st1 = SuperTrend(self.df, 4, 0.7)
+        # st2 = SuperTrend(self.df, 10, 1)
+        # st3 = SuperTrend(self.df, 11, 2)
+        # st4 = SuperTrend(self.df, 12, 3)
+        # self.df['SuperTrend1'] = st1['ST'].shift()
+        # self.df['SuperTrend2'] = st2['ST'].shift()
+        # self.df['SuperTrend3'] = st3['ST'].shift()
+        # self.df['SuperTrend4'] = st4['ST'].shift()
+
         self.df['SuperTrend1'] = np.where(self.df.Close > self.df.SuperTrend1, 1.0, 0.0)
         self.df['SuperTrend2'] = np.where(self.df.Close > self.df.SuperTrend2, 1.0, 0.0)
         self.df['SuperTrend3'] = np.where(self.df.Close > self.df.SuperTrend3, 1.0, 0.0)
@@ -61,18 +77,15 @@ class GetDataset(object):
         '''Generate Classification Column'''
         # note ilkay made some fixes
         self.df['Next_Close_Day'] = self.df['Close'].shift(-1)
-        if not isReal:
-            self.df.dropna(how='any', axis=0,
-                           inplace=True)  # if this is not done if/else logic below will fill NaN with 0
+        self.df.dropna(how='any', axis=0,
+                       inplace=True)  # if this is not done if/else logic below will fill NaN with 0
         comparison_column = np.where(self.df["Next_Close_Day"] > self.df["Close"], int(1), int(0))
         self.df["change"] = comparison_column
         self.df['Next_Day_Change'] = self.df['change']
         self.df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
 
-        if isReal:
-            self.df = self.df.iloc[1:, :]
-        else:
-            self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
+        self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
+
         # todo implement standard scaler instead, also need to move scaling to dataset's transform method
         '''Normalize price columns'''
         # self.df[["Open", "High", "Low", "Close", "Volume"]] = self.df[["Open", "High", "Low", "Close", "Volume"]].apply(
@@ -80,9 +93,11 @@ class GetDataset(object):
         # self.df[["Open", "High", "Low", "Close", "EMA"]] = self.df[["Open", "High", "Low", "Close", "EMA"]].apply(self.normalize_data)
 
         '''Drop Unneeded Columns'''
-        self.df.drop(columns=['Date', 'SuperTrend4', 'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
-                              'macdValue', 'macdAvg'], inplace=True)
-
+        # self.df.drop(columns=['Date', 'SuperTrend4', 'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
+        #                      'macdValue', 'macdAvg'], inplace=True)
+        self.df.drop(columns=['Date', 'SuperTrend4', 'macdValue', 'macdAvg', 'EMA', 'SuperTrend2', 'SuperTrend3', 'RSI',
+                              'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
+                              'BollingerUpperDifference', 'BollingerLowerDifference', 'MACD'], inplace=True)
         return self.df
 
     def get_data2(self, future_days):
