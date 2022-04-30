@@ -2,6 +2,7 @@ import itertools
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.metrics import classification_report
+import sklearn.metrics as metrics
 from tqdm import tqdm_notebook
 import torch
 
@@ -173,3 +174,21 @@ def plot_tsne(x_train, y_train, name, random_state, save):
     plt.figtext(0.15, 0.85, "Up Days", color='blue')
     #plt.legend()
     save_or_show_plot('tsne'+name, save)
+    
+#cite: partially from Ilkay's hw1
+def plot_roc_auc(model, datasets, info, save, path):
+    markers=['o','>','<','+','*','s','d','.']
+    colors=['navy','orange', 'red','magenta']
+    model.eval()
+    for i,(type, dataset) in enumerate(datasets.items()):
+        features, targets = dataset[:]
+        predictions = f.sigmoid(model(features.float()))
+        false_pos_rate, true_pos_rate, threshold = metrics.roc_curve(targets.cpu().detach().numpy(),   f.sigmoid(model(features.float())).cpu().detach().numpy())
+        plt.plot(false_pos_rate, true_pos_rate, label = f'Area Under Curve ({type}) ={metrics.auc(false_pos_rate, true_pos_rate):.2f}', marker=markers[i%len(markers)], color=colors[i%len(colors)])
+    plt.plot([0, 1], [0, 1],'orange')
+    plt.title(f'Receiver operating characteristic ({info})')
+    plt.ylabel('True positive rate')
+    plt.xlabel('False positive rate')
+    plt.legend(loc = 'best')
+    plt.grid()
+    save_or_show_plot(path + 'roc_auc_curve_' + info, save)
