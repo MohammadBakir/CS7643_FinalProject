@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
+import sklearn.metrics as metrics
 import torch
 import torch.nn.functional as f
 
@@ -67,8 +68,6 @@ def train(model, dataloader, optimizer, criterion, device, scheduler=None, grad_
         data, target = data.to(device), target.to(device)
         out = model(data.float())
         optimizer.zero_grad()
-        # Note: input data to the BCEWithLogitsLoss can be anything. The 'Examples:' in the link below can generate any value, positive or negative
-        # Reference: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
         loss = criterion(out, target.float())
         total_loss += loss
         loss.backward()
@@ -76,11 +75,10 @@ def train(model, dataloader, optimizer, criterion, device, scheduler=None, grad_
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         # plot_grad_flow(model.named_parameters())
         optimizer.step()
-        # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
-        # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
-        pred = torch.round(f.sigmoid(out)).long()
-        batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
-            'weighted avg']['f1-score']
+        pred = torch.round(torch.sigmoid(out)).long()
+        # batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
+        #    'weighted avg']['f1-score']
+        batch_acc = accuracy_score(target, pred)
         losses.update(loss, out.shape[0])
         acc.update(batch_acc, out.shape[0])
 
@@ -94,28 +92,18 @@ def evaluate(model, dataloader, criterion, device):
     losses = AverageMeter()
     acc = AverageMeter()
     with torch.no_grad():
-        # Get the progress bar
-        # progress_bar = tqdm_notebook(dataloader, ascii=True)
         progress_bar = dataloader
         for batch_idx, (data, target) in enumerate(progress_bar):
             data, target = data.to(device), target.to(device)
             out = model(data.float())
-            # Note: input data to the BCEWithLogitsLoss can be anything. The 'Examples:' in the link below can generate any value, positive or negative
-            # Reference: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
             loss = criterion(out, target.float())
             total_loss += loss
-            # progress_bar.set_description_str(
-            #    "Batch: %d, Loss: %.4f" % ((batch_idx + 1), loss.item()))
-
-            # Added back the rounding and sigmoid in training, validation, and testing in Trainer.py
-            # Reference: https://stackoverflow.com/questions/64002566/bcewithlogitsloss-trying-to-get-binary-output-for-predicted-label-as-a-tensor
-            pred = torch.round(f.sigmoid(out)).long()
-            batch_acc = \
-                classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
-                    'weighted avg']['f1-score']
+            pred = torch.round(torch.sigmoid(out)).long()
+            # batch_acc = classification_report(target.cpu().detach().numpy(), pred.cpu().detach().numpy(), output_dict=True)[
+            #    'weighted avg']['f1-score']
+            batch_acc = accuracy_score(target, pred)
             losses.update(loss, out.shape[0])
             acc.update(batch_acc, out.shape[0])
-
     return total_loss, losses.avg, acc.avg
 
 
@@ -195,3 +183,25 @@ def plot_tsne(x_train, y_train, name, random_state, save):
     plt.figtext(0.15, 0.85, "Up Days", color='blue')
     # plt.legend()
     save_or_show_plot('tsne' + name, save)
+
+
+# cite: partially from Ilkay's hw1
+def plot_roc_auc(model, datasets, info, save, path):
+    markers = ['o', '>', '<', '+', '*', 's', 'd', '.']
+    colors = ['navy', 'orange', 'red', 'magenta']
+    model.eval()
+    for i, (type, dataset) in enumerate(datasets.items()):
+        features, targets = dataset[:]
+        predictions = f.sigmoid(model(features.float()))
+        false_pos_rate, true_pos_rate, threshold = metrics.roc_curve(targets.cpu().detach().numpy(), f.sigmoid(
+            model(features.float())).cpu().detach().numpy())
+        plt.plot(false_pos_rate, true_pos_rate,
+                 label=f'Area Under Curve ({type}) ={metrics.auc(false_pos_rate, true_pos_rate):.2f}',
+                 marker=markers[i % len(markers)], color=colors[i % len(colors)])
+    plt.plot([0, 1], [0, 1], 'orange')
+    plt.title(f'Receiver operating characteristic ({info})')
+    plt.ylabel('True positive rate')
+    plt.xlabel('False positive rate')
+    plt.legend(loc='best')
+    plt.grid()
+    save_or_show_plot(path + 'roc_auc_curve_' + info, save)

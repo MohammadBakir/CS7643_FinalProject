@@ -39,7 +39,8 @@ class GetDataset(object):
 
     def get_data(self):
         '''Get Data into Dataframe'''
-        self.df = pd.read_csv(self.csv)
+        self.raw_df = pd.read_csv(self.csv)
+        self.df = self.raw_df.copy()
         self.df.drop('Symbol', 1, inplace=True)
         self.df['DateTime'] = pd.to_datetime(self.df['DateTime']).dt.date
         self.df.rename({'DateTime': 'Date'}, axis=1, inplace=True)
@@ -65,15 +66,6 @@ class GetDataset(object):
         self.df['BollingerUpperDifference'] = self.df['UpperBollingerBand'] - self.df['Close']
         self.df['BollingerLowerDifference'] = self.df['Close'] - self.df['LowerBollingerBand']
 
-        '''Calculate percentage change'''
-        self.df['Open'] = self.df['Open'].pct_change()  # Create arithmetic returns column
-        self.df['High'] = self.df['High'].pct_change()  # Create arithmetic returns column
-        self.df['Low'] = self.df['Low'].pct_change()  # Create arithmetic returns column
-        self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
-        self.df['Volume'] = self.df['Volume'].pct_change()
-        self.df['BollingerUpperDifference'] = self.df['BollingerUpperDifference'].pct_change()
-        self.df['BollingerLowerDifference'] = self.df['BollingerLowerDifference'].pct_change()
-
         '''Generate Classification Column'''
         # note ilkay made some fixes
         self.df['Next_Close_Day'] = self.df['Close'].shift(-1)
@@ -83,6 +75,25 @@ class GetDataset(object):
         self.df["change"] = comparison_column
         self.df['Next_Day_Change'] = self.df['change']
         self.df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
+
+        '''Generate Classification Column'''
+        # note ilkay made some fixes
+        self.raw_df['Next_Close_Day'] = self.raw_df['Close'].shift(-1)
+        self.raw_df.dropna(how='any', axis=0,
+                           inplace=True)  # if this is not done if/else logic below will fill NaN with 0
+        comparison_column = np.where(self.raw_df["Next_Close_Day"] > self.raw_df["Close"], int(1), int(0))
+        self.raw_df["change"] = comparison_column
+        self.raw_df['Next_Day_Change'] = self.raw_df['change']
+        self.raw_df.drop(["Next_Close_Day", "change"], axis=1, inplace=True)
+
+        '''Calculate percentage change on existing columns'''
+        self.df['Open'] = self.df['Open'].pct_change()  # Create arithmetic returns column
+        self.df['High'] = self.df['High'].pct_change()  # Create arithmetic returns column
+        self.df['Low'] = self.df['Low'].pct_change()  # Create arithmetic returns column
+        self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
+        self.df['Volume'] = self.df['Volume'].pct_change()
+        self.df['BollingerUpperDifference'] = self.df['BollingerUpperDifference'].pct_change()
+        self.df['BollingerLowerDifference'] = self.df['BollingerLowerDifference'].pct_change()
 
         self.df.dropna(how='any', axis=0, inplace=True)  # Drop all rows with NaN values
 
@@ -95,9 +106,8 @@ class GetDataset(object):
         '''Drop Unneeded Columns'''
         # self.df.drop(columns=['Date', 'SuperTrend4', 'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
         #                      'macdValue', 'macdAvg'], inplace=True)
-        self.df.drop(columns=['Date', 'SuperTrend4', 'macdValue', 'macdAvg', 'EMA', 'SuperTrend2', 'SuperTrend3', 'RSI',
-                              'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
-                              'BollingerUpperDifference', 'BollingerLowerDifference', 'MACD'], inplace=True)
+        self.df.drop(columns=['Date', 'SuperTrend4', 'macdValue', 'macdAvg', 'RSI',
+                              'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand'], inplace=True)
         return self.df
 
     def get_data2(self, future_days):

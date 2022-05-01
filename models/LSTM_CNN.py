@@ -1,10 +1,9 @@
 import torch
-from torch.nn import Module, LSTM, Linear, Conv1d, LeakyReLU, GRU, RNN
+from torch.nn import Module, LSTM, Linear, Conv1d, GRU, RNN
 
 
 class LSTM_CNN(Module):
-    def __init__(self, modeltype, input_size, lstm_hidden_size, lstm_layers, lstm_output_size, kernel_size, padding,
-                 leaky_relu):
+    def __init__(self, modeltype, input_size, lstm_hidden_size, lstm_layers, lstm_output_size, kernel_size, padding):
         super(LSTM_CNN, self).__init__()
         if modeltype == 'rnn':
             self.lstm = RNN(input_size=input_size, hidden_size=lstm_hidden_size,
@@ -16,8 +15,7 @@ class LSTM_CNN(Module):
             self.lstm = GRU(input_size=input_size, hidden_size=lstm_hidden_size,
                             num_layers=lstm_layers, batch_first=True)
         self.conv1 = Conv1d(lstm_hidden_size, lstm_hidden_size, kernel_size, padding=padding)
-        self.linear = Linear(in_features=lstm_hidden_size, out_features=1)
-        # self.leaky_relu = LeakyReLU(leaky_relu)
+        self.linear = Linear(in_features=lstm_hidden_size, out_features=lstm_output_size)
 
     def forward(self, out):
         out, _ = self.lstm(out)
@@ -28,8 +26,4 @@ class LSTM_CNN(Module):
         out = out.permute(1, 0)
         linear_out = self.linear(out)
         out = linear_out
-        # Commented out using leaky_relu because BCEWithLogitsLoss uses Sigmoid on its own. No need to have an
-        # activation function go into another activation function
-        # Reference: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
-        # out = self.leaky_relu(linear_out)
         return out
