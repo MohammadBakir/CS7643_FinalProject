@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
+import seaborn as sb
 from sklearn.metrics import classification_report
 import sklearn.metrics as metrics
 import torch
 import torch.nn.functional as f
 from torch.utils.data import DataLoader
 import statistics
+
 
 from models.LSTM_CNN import LSTM_CNN
 
@@ -138,7 +140,7 @@ def evaluate(model, dataloader, criterion, device):
     return total_loss, losses.avg, acc.avg
 
 
-# cite: from hw4
+
 def run_epoch(model, epochs, train_loader, valid_loader, optimizer, criterion, device):
     atl, ata, avl, ava = [], [], [], []
     for epoch in range(epochs):
@@ -269,7 +271,7 @@ def plot_roc_auc(model, datasets, info, save, path):
     plt.grid()
     save_or_show_plot(path + 'roc_auc_curve_' + info, save)
     
-# cite: partially from Ilkay's gatech dl class
+# cite: from Ilkay's gatech dl class
 def plot_learning_curves(train_loss_history, train_acc_history, valid_loss_history, valid_acc_history, info, save, path):
     plotting = {'Loss': {'tra_data': train_loss_history, 'val_data': valid_loss_history},
                 'Accuracy': {'tra_data': train_acc_history, 'val_data': valid_acc_history}}
@@ -282,3 +284,102 @@ def plot_learning_curves(train_loss_history, train_acc_history, valid_loss_histo
         plt.grid()
         plt.legend(loc="best")
         save_or_show_plot(path + type + '_learning_curve_' + info, save)
+        
+        
+#cite: from Ilkay's gatech ml class
+def get_pca_explained_variance_ratio(x_train, n_components, random_state):
+    res={}
+    temp = []
+    for n_component in n_components:
+        dim_reducer = PCA(n_components=n_component, random_state=random_state)
+        reduced_x_train = dim_reducer.fit_transform(x_train)
+        temp.append(sum(dim_reducer.explained_variance_ratio_))
+    res['k'] = n_components
+    res['total_explained_variance_ratio'] = temp
+    return res
+
+## EXAMPLE PCA RUN:
+## assuming dataset already retrieved
+#from sklearn.decomposition import PCA
+#RANDOM_STATE=23817054
+#base_sel=['SuperTrend1', 'SuperTrend2', 'SuperTrend3', 'BollingerUpperDifference', 'BollingerLowerDifference'] #pick columns for less clutter
+#target_sel=['Next_Day_Change']
+#dataset=dataset[base_sel+target_sel] #select a subset
+#df_train = dataset[:][base_sel+target_sel]
+#train_dataset = StockData(df_train.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS)
+#my_df=df_train
+#x_temp,y_temp=train_dataset[:]
+#x_temp,y_temp=x_temp.numpy(), y_temp.numpy()
+#base_sel_expanded=[feature+ '-Day' + str(i//len(base_sel)) for i,feature in enumerate(HYPERPARAMETERS.NUM_DAYS*base_sel)]
+#seq_data=np.append(x_temp.reshape(x_temp.shape[0],-1), y_temp, axis = 1)
+#target_column='Day'+str(HYPERPARAMETERS.NUM_DAYS)+' Up/Down'
+#seq_df=pd.DataFrame(data=seq_data,columns=base_sel_expanded+[target_column])
+#seq_df_a=seq_df.sample(n=1000,random_state=RANDOM_STATE)#subsample for less clutter
+#seq_df_a=seq_df_a.rename(columns={"BollingerUpperDifference-Day0": "Boll.Up.Dif-Day0", "BollingerUpperDifference-Day2": "Boll.Up.Dif-Day2"})
+#x_train_only = seq_df_a.drop(target_column, axis=1)
+#print(get_pca_explained_variance_ratio(x_train_only, list(range(1, len(base_sel_expanded))), RANDOM_STATE))
+#pca = PCA(n_components=6, random_state=RANDOM_STATE)
+#reduced_x_train = pca.fit_transform(x_train_only)
+#pca_result = {'reduced_x':reduced_x_train, 'components':pca.components_}
+#plot_name = 'SPX_PCA_biplot_loadings'
+#chosen_component0=0
+#chosen_component1=1
+#plot_pca_k_val(pca_result, seq_df_a[target_column], chosen_component0, chosen_component1, x_train_only.columns, name=plot_name, save=False,load_thld=0.0)
+
+#cite https://stackoverflow.com/questions/39216897/plot-pca-loadings-and-loading-in-biplot-in-sklearn-like-rs-autoplot                
+def plot_pca_k_val(exp_results, labels, pc0, pc1,features, name, save,load_thld=0, show_loads=True):
+    xs = exp_results['reduced_x'][:, pc0]
+    ys = exp_results['reduced_x'][:, pc1]
+    M = exp_results['components'].shape[0]
+    #plt.figure(figsize=(int(M/3)+3, 3+int(len(features)/6)))
+    #sb.heatmap(exp_results['components'].T, xticklabels=['C'+str(i) for i in range(0,M)], yticklabels=features,cmap=sb.color_palette("mako", as_cmap=True))
+    #plt.title((name+'_loadings').replace("_", " "))
+    #save_or_show_plot(name, save)
+
+    coeff = exp_results['components'][[pc0,pc1]].T
+    n = coeff.shape[0]
+    scalex = 1.0 / (xs.max() - xs.min())
+    scaley = 1.0 / (ys.max() - ys.min())
+    scatter = plt.scatter(xs * scalex, ys * scaley, c=labels, alpha=0.8,cmap='Set3')
+    plt.legend(handles=scatter.legend_elements()[0], labels=[0,1],title="Target-Label", loc='lower left')
+    if show_loads:
+        coeff=0.5 * coeff / np.abs(coeff).max()
+        for i in range(n):
+            if (coeff[i, 0]**2 + coeff[i, 1]**2)>(0.25 * np.abs(coeff).max())**2:
+                plt.arrow(0, 0, coeff[i, 0], coeff[i, 1], color='r', alpha=0.8)
+                plt.text(coeff[i, 0] * .9, coeff[i, 1] * .9, features[i], color='k', ha='center', va='center')
+    scale=0.6
+    plt.xlim(-1*scale, scale)
+    plt.ylim(-1*scale, scale)
+    plt.xlabel("Principal C.{}".format(pc0))
+    plt.ylabel("Principal C.{}".format(pc1))
+    plt.title(name.replace("_", " "))
+    plt.grid()
+    save_or_show_plot(name, save)
+
+
+## EXAMPLE T-SNE RUN:
+## assuming dataset already retrieved
+#base_sel=['SuperTrend1', 'SuperTrend2', 'SuperTrend3', 'BollingerUpperDifference', 'BollingerLowerDifference'] #pick columns for less clutter
+#target_sel=['Next_Day_Change']
+#dataset=dataset[base_sel+target_sel] #select a subset
+#df_train = dataset[:][base_sel+target_sel]
+#train_dataset = StockData(df_train.to_numpy(), num_days=HYPERPARAMETERS.NUM_DAYS)
+#my_df=df_train
+#x_temp,y_temp=train_dataset[:]
+#x_temp,y_temp=x_temp.numpy(), y_temp.numpy()
+#base_sel_expanded=[feature+ '-Day' + str(i//len(base_sel)) for i,feature in enumerate(HYPERPARAMETERS.NUM_DAYS*base_sel)]
+#seq_data=np.append(x_temp.reshape(x_temp.shape[0],-1), y_temp, axis = 1)
+#target_column='Day'+str(HYPERPARAMETERS.NUM_DAYS)+' Up/Down'
+#seq_df=pd.DataFrame(data=seq_data,columns=base_sel_expanded+[target_column])
+#plot_tsne(seq_df.drop(target_column, axis=1), seq_df[target_column],'SPX', 512, save=False)
+
+#cite: from Ilkay's gatech ml class
+def plot_tsne(x_train, y_train, name, random_state, save):
+    tsne = TSNE(random_state=random_state).fit_transform(x_train)
+    plt.scatter(tsne[:,0],tsne[:,1],c=y_train.map({0:'orange', 1: 'blue'}), alpha=0.4)
+    plt.title('t-SNE projection for features of ' + name + ' dataset')
+    plt.figtext(0.15, 0.80, "Down Days", color='orange')
+    plt.figtext(0.15, 0.85, "Up Days", color='blue')
+    #plt.legend()
+    save_or_show_plot('tsne'+name, save)
