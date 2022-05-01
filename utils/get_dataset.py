@@ -40,6 +40,7 @@ class GetDataset(object):
     def get_data(self):
         '''Get Data into Dataframe'''
         self.raw_df = pd.read_csv(self.csv)
+        self.raw_df = self.raw_df.drop(columns=['Volume'])
         self.df = self.raw_df.copy()
         self.df.drop('Symbol', 1, inplace=True)
         self.df['DateTime'] = pd.to_datetime(self.df['DateTime']).dt.date
@@ -91,7 +92,7 @@ class GetDataset(object):
         self.df['High'] = self.df['High'].pct_change()  # Create arithmetic returns column
         self.df['Low'] = self.df['Low'].pct_change()  # Create arithmetic returns column
         self.df['Close'] = self.df['Close'].pct_change()  # Create arithmetic returns column
-        self.df['Volume'] = self.df['Volume'].pct_change()
+        # self.df['Volume'] = self.df['Volume'].pct_change()
         self.df['BollingerUpperDifference'] = self.df['BollingerUpperDifference'].pct_change()
         self.df['BollingerLowerDifference'] = self.df['BollingerLowerDifference'].pct_change()
 
@@ -106,8 +107,9 @@ class GetDataset(object):
         '''Drop Unneeded Columns'''
         # self.df.drop(columns=['Date', 'SuperTrend4', 'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand',
         #                      'macdValue', 'macdAvg'], inplace=True)
-        self.df.drop(columns=['Date', 'SuperTrend4', 'macdValue', 'macdAvg', 'RSI',
-                              'LowerBollingerBand', 'MiddleBollingerBand', 'UpperBollingerBand'], inplace=True)
+        self.df.drop(
+            columns=['Date', 'SuperTrend4', 'macdValue', 'macdAvg', 'LowerBollingerBand', 'MiddleBollingerBand',
+                     'UpperBollingerBand', 'BollingerUpperDifference', 'BollingerLowerDifference'], inplace=True)
         return self.df
 
     def get_data2(self, future_days):

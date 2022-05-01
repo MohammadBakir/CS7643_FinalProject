@@ -21,12 +21,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class HYPERPARAMETERS:
-    NUM_DAYS = 5
+    NUM_DAYS = 3
     BATCH_SIZE = 8
     DEVICE = device
     TMI_N_LAYERS = 4
     TMI_NUM_HEADS = 2
-    FEATURES = 13
+    FEATURES = 12
     TMI_FORWARD_DIM = 8
     TMI_OUTPUT_DIM = 6
     OUTPUT_DIM = 1
@@ -46,9 +46,9 @@ class params:
     seq_len = 7
 
 
-epochs = 200
-image_name = 'RNN-CNN SPY'
-model_save_path_and_name = "../outputs/RNN-CNN_SPY_ST_Python_Testing-test.pth"
+epochs = 100
+image_name = 'LSTM-CNN SPX'
+model_save_path_and_name = "../outputs/LSTM-CNN_SPX.pth"
 save_model = True
 overlap_training = True
 overlap_validation = True
@@ -62,14 +62,14 @@ shuffle_testing = False
 # MODEL = FCNet(in_shape=HYPERPARAMETERS.FEATURES * HYPERPARAMETERS.NUM_DAYS)
 # Model Types can be 'rnn', 'lstm', and 'gru'
 # MODEL = LSTM(modeltype='rnn', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, leaky_relu=0.2)
-MODEL = LSTM_CNN(modeltype='rnn', input_size=12, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
+MODEL = LSTM_CNN(modeltype='lstm', input_size=10, lstm_hidden_size=5, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1)
 # MODEL = FullyConnectedNetwork
 
 CRITERION = torch.nn.BCEWithLogitsLoss(reduction='mean')
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=HYPERPARAMETERS.LR)
 
-csv = '../data/SPY-Indicators.csv'
+csv = '../data/SPX-Indicators.csv'
 df = GetDataset(csv)
 dataset = df.get_data()
 valid_frac, test_frac = 0.2, 0.2
