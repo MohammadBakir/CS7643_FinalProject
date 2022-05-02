@@ -11,7 +11,7 @@ num_days = 3
 df = GetDataset(csv)
 model = LSTM_CNN(modeltype='lstm', input_size=9, lstm_hidden_size=35, lstm_layers=5, lstm_output_size=1, kernel_size=3,
                  padding=1, dropout=0.3)
-state_dict = torch.load('../outputs/LSTM-CNN_SPX.pth')
+state_dict = torch.load('../outputs/LSTM-CNN_SPY.pth')
 model.load_state_dict(state_dict)
 model.eval()
 data = df.get_data()
