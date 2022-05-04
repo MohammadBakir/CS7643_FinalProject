@@ -10,7 +10,3 @@ Team Project CS7643
 * **Mohammad Bakir**
 * **Sari Ilkay**
 * **Nick Lisichenok**
-
-## License
-
-This project is licensed under the MIT License
