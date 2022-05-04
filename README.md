@@ -1,14 +1,15 @@
 # CS7643_FinalProject
+
 Team Project CS7643
 
 # Market Prediction using Transformer Models (Title TBD)
 
 ## Authors
 
-* **Harsha Aswath** 
-* **Mohammad Bakir** 
-* **Sari Ilkay** 
-* **Nick Lisichenok** 
+* **Harsha Aswath**
+* **Mohammad Bakir**
+* **Sari Ilkay**
+* **Nick Lisichenok**
 
 ## License
 
