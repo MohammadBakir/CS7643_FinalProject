@@ -2,7 +2,7 @@
 
 Team Project CS7643
 
-# Market Prediction using Transformer Models (Title TBD)
+# Market Prediction using LSTM-CNN Model
 
 ## Authors
 
